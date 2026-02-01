@@ -1,0 +1,74 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String     @id @default(cuid())
+  email                 String     @unique
+  password              String     // Hash bcrypt
+  username              String?    @unique
+  resetPasswordToken    String?    @unique
+  resetPasswordExpires  DateTime?
+  emailVerified         Boolean    @default(false)
+  verificationCode      String?
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+  sessions              Session[]
+  achievements Achievement[]
+  authSessions AuthSession[] // Sesiones de autenticación
+}
+
+model Session {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  caseId    String
+  caseName  String
+  points    Int
+  feedback  String
+  transcript MessageRecord[]
+  completed Boolean     @default(false)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model MessageRecord {
+  id        String     @id @default(cuid())
+  sessionId String
+  session   Session    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      String     // "doctor" or "paciente"
+  content   String
+  createdAt DateTime   @default(now())
+}
+
+model AuthSession {
+  id        String     @id @default(cuid())
+  userId    String?
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email     String?    // Para verificación de email sin user asociado
+  token     String     @unique // JWT o session token
+  type      String     @default("session") // "session", "email_verification", "password_reset"
+  expiresAt DateTime
+  createdAt DateTime   @default(now())
+}
+
+model Achievement {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId   String
+  badgeName String
+  description String
+  unlockedAt DateTime   @default(now())
+  createdAt DateTime   @default(now())
+  
+  @@unique([userId, badgeId])
+}
